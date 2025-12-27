@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.12
 
-FROM python:3.11-slim AS base
+FROM python:3.11-slim
 
 # System deps
 RUN apt-get update && \
@@ -25,26 +25,27 @@ ARG marimo_version=0.12.8
 ENV MARIMO_SKIP_UPDATE_CHECK=1
 ENV UV_SYSTEM_PYTHON=1
 
-############################
-# Install ALL Python deps as root
-############################
+# Install Python deps + prepare volumes
 RUN uv pip install --no-cache-dir \
         marimo==${marimo_version} \
         marimo[recommended,lsp,sql] \
         pyspark==3.5.1 \
         delta-spark==3.1.0 \
         altair pandas numpy && \
-    mkdir -p /app/data && \
-    chown -R appuser:appuser /app
+    mkdir -p \
+        /delta \
+        /data/raw \
+        /app/data && \
+    chown -R appuser:appuser \
+        /delta \
+        /data \
+        /app
 
-############################
 # Runtime user
-############################
 USER appuser
 
 ENV PORT=8080
 ENV HOST=0.0.0.0
-EXPOSE $PORT
+EXPOSE 8080
 
 CMD ["marimo", "edit", "--no-token", "-p", "8080", "--host", "0.0.0.0"]
-
